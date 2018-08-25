@@ -18,7 +18,7 @@ So if you can't (or won't run the datadog), package provides a simple interface 
 # What does this do?
 
 * Stores your metrics locally at **per second** resolution, supporting both counters and guages.  This might be a better than the statsd interface you've been using previously.
-* Uploads your metrics to DataDog every 30 seconds (although configurable)
+* Uploads your metrics to DataDog every 15 seconds
 
 # What doesn't this do?
 
@@ -38,6 +38,8 @@ https://docs.datadoghq.com/api/?lang=bash#post-timeseries-points
 ## datadog-go
 
 In particular, much of this code is based on [statsd.go](https://github.com/DataDog/datadog-go/blob/master/statsd/statsd.go).   I have mixed feelings about the "watcher" being glued into the main object but seems to work for now.
+
+Interestingly, the buffered implimentation doesn't consolidate anything.  If you do 100 increments of a single stat, it will send 100 statsd messages.
 
 ## strip/veneue
 

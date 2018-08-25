@@ -112,7 +112,7 @@ func New(hostname string, apikey string) (*Client, error) {
 		now:       now,
 		hostname:  hostname,
 		metrics:   make(map[string]*DDMetric),
-		flushTime: time.Second * 30,
+		flushTime: time.Second * 15,
 		stop:      make(chan struct{}, 1),
 		writer:    NewWriter(apikey, time.Second*5),
 	}
