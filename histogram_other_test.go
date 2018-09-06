@@ -35,7 +35,7 @@ func benchmarkHdrHistogram(sz int, b *testing.B) {
 		hr.max = float64(h.Max())
 		hr.count = float64(h.TotalCount())
 		hr.p95 = float64(h.ValueAtQuantile(0.95))
-		hr.median =  float64(h.ValueAtQuantile(0.50))
+		hr.median = float64(h.ValueAtQuantile(0.50))
 		hr.avg = float64(h.Mean())
 
 		h.Reset()
