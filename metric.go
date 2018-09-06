@@ -94,13 +94,13 @@ func (m *Metric) Add(now float64, val float64) {
 
 // Client is the main datastructure of metrics to upload
 type Client struct {
-	Series   []*Metric          `json:"series"` // raw data
-	hostname string             // hostname
-	metrics  map[string]*Metric // map of name to metric for fast lookup
-
-	now       func() float64 // for testing
-	writer    io.WriteCloser // where output goes
-	flushTime time.Duration  // how often to upload
+	Series     []*Metric          `json:"series"` // raw data
+	hostname   string             // hostname
+	metrics    map[string]*Metric // map of name to metric for fast lookup
+	histograms map[string]*ExactHistogram
+	now        func() float64 // for testing
+	writer     io.WriteCloser // where output goes
+	flushTime  time.Duration  // how often to upload
 
 	stop chan struct{}
 	sync.Mutex
@@ -109,12 +109,13 @@ type Client struct {
 // New creates a new datadog client
 func New(hostname string, apikey string) (*Client, error) {
 	client := &Client{
-		now:       now,
-		hostname:  hostname,
-		metrics:   make(map[string]*Metric),
-		flushTime: time.Second * 15,
-		stop:      make(chan struct{}, 1),
-		writer:    NewWriter(apikey, time.Second*5),
+		now:        now,
+		hostname:   hostname,
+		metrics:    make(map[string]*Metric),
+		histograms: make(map[string]*ExactHistogram),
+		flushTime:  time.Second * 15,
+		stop:       make(chan struct{}, 1),
+		writer:     NewWriter(apikey, time.Second*5),
 	}
 	go client.watch()
 	return client, nil
@@ -175,6 +176,25 @@ func (c *Client) Decr(name string) error {
 	return c.Count(name, -1.0)
 }
 
+// Timing records a duration
+func (c *Client) Timing(name string, val time.Duration) error {
+	// datadog works in milliseconds
+	return c.Histogram(name, val.Seconds()*1000)
+}
+
+// Histogram records a value that will be used in aggregate
+func (c *Client) Histogram(name string, val float64) error {
+	c.Lock()
+	h := c.histograms[name]
+	if h == nil {
+		h = NewExactHistogram(1000)
+		c.histograms[name] = h
+	}
+	h.Add(val)
+	c.Unlock()
+	return nil
+}
+
 // Snapshot makes a copy of the data and resets everything locally
 func (c *Client) Snapshot() *Client {
 	c.Lock()
@@ -183,9 +203,11 @@ func (c *Client) Snapshot() *Client {
 		return nil
 	}
 	ccopy := Client{
-		Series: c.Series,
+		Series:     c.Series,
+		histograms: c.histograms,
 	}
 	c.metrics = make(map[string]*Metric)
+	c.histograms = make(map[string]*ExactHistogram)
 	c.Series = nil
 	c.Unlock()
 	return &ccopy
@@ -200,6 +222,37 @@ func (c *Client) Flush() error {
 	if snap == nil {
 		return nil
 	}
+
+	// now for histograms, convert to various descriptive statistic guages
+	for name, h := range snap.histograms {
+		hr := h.Flush()
+
+		// MAX
+		m := NewMetric(name+".max", "guage", c.hostname)
+		m.Add(c.now(), hr.max)
+		snap.Series = append(snap.Series, m)
+
+		// COUNT
+		m = NewMetric(name+".count", "guage", c.hostname)
+		m.Add(c.now(), hr.count)
+		snap.Series = append(snap.Series, m)
+
+		// AVERAGE
+		m = NewMetric(name+".avg", "guage", c.hostname)
+		m.Add(c.now(), hr.avg)
+		snap.Series = append(snap.Series, m)
+
+		// MEDIAN
+		m = NewMetric(name+".median", "guage", c.hostname)
+		m.Add(c.now(), hr.median)
+		snap.Series = append(snap.Series, m)
+
+		// 95 percentile
+		m = NewMetric(name+".95percentile", "guage", c.hostname)
+		m.Add(c.now(), hr.p95)
+		snap.Series = append(snap.Series, m)
+	}
+
 	raw, err := json.Marshal(snap)
 	if err != nil {
 		return err
