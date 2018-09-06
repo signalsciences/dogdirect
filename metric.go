@@ -139,6 +139,7 @@ func (c *Client) watch() {
 
 // Gauge represent an observation
 func (c *Client) Gauge(name string, value float64) error {
+	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
 		m = NewMetric(name, "gauge", c.hostname)
@@ -146,6 +147,7 @@ func (c *Client) Gauge(name string, value float64) error {
 		c.metrics[name] = m
 	}
 	m.Add(c.now(), value)
+	c.Unlock()
 	return nil
 }
 
