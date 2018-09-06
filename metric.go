@@ -226,6 +226,9 @@ func (c *Client) Flush() error {
 	// now for histograms, convert to various descriptive statistic guages
 	for name, h := range snap.histograms {
 		hr := h.Flush()
+		if hr.count == 0 {
+			continue
+		}
 
 		// MAX
 		m := NewMetric(name+".max", "guage", c.hostname)
