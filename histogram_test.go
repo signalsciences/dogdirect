@@ -7,8 +7,8 @@ import (
 var result float64
 
 func benchmarkExactHistogram(sz int, b *testing.B) {
-	h := NewExactHistogram()
 	for n := 0; n < b.N; n++ {
+		h := NewExactHistogram(sz)
 		for i := sz - 1; i >= 0; i-- {
 			h.Add(float64(i))
 		}
