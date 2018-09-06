@@ -45,9 +45,9 @@ A list of tags associated with the metric
 
 */
 
-// DDMetric is a data structure that represents the JSON that Datadog
+// Metric is a data structure that represents the JSON that Datadog
 // wants when posting to the API
-type DDMetric struct {
+type Metric struct {
 	Name       string       `json:"metric"`
 	Value      [][2]float64 `json:"points"`
 	MetricType string       `json:"type"`
@@ -61,8 +61,8 @@ func now() float64 {
 }
 
 // NewMetric creates a new metric
-func NewMetric(name, mtype, host string) *DDMetric {
-	return &DDMetric{
+func NewMetric(name, mtype, host string) *Metric {
+	return &Metric{
 		Name:       name,
 		MetricType: mtype,
 		Hostname:   host,
@@ -70,7 +70,7 @@ func NewMetric(name, mtype, host string) *DDMetric {
 }
 
 // Add uses a new observation and adjusts the metric accordingly
-func (m *DDMetric) Add(now float64, val float64) {
+func (m *Metric) Add(now float64, val float64) {
 	vlast := len(m.Value) - 1
 
 	// if first point, OR if last point is in a previous interval
@@ -94,9 +94,9 @@ func (m *DDMetric) Add(now float64, val float64) {
 
 // Client is the main datastructure of metrics to upload
 type Client struct {
-	Series   []*DDMetric          `json:"series"` // raw data
-	hostname string               // hostname
-	metrics  map[string]*DDMetric // map of name to metric for fast lookup
+	Series   []*Metric          `json:"series"` // raw data
+	hostname string             // hostname
+	metrics  map[string]*Metric // map of name to metric for fast lookup
 
 	now       func() float64 // for testing
 	writer    io.WriteCloser // where output goes
@@ -111,7 +111,7 @@ func New(hostname string, apikey string) (*Client, error) {
 	client := &Client{
 		now:       now,
 		hostname:  hostname,
-		metrics:   make(map[string]*DDMetric),
+		metrics:   make(map[string]*Metric),
 		flushTime: time.Second * 15,
 		stop:      make(chan struct{}, 1),
 		writer:    NewWriter(apikey, time.Second*5),
@@ -183,7 +183,7 @@ func (c *Client) Snapshot() *Client {
 	ccopy := Client{
 		Series: c.Series,
 	}
-	c.metrics = make(map[string]*DDMetric)
+	c.metrics = make(map[string]*Metric)
 	c.Series = nil
 	c.Unlock()
 	return &ccopy
