@@ -19,11 +19,14 @@ So if you can't (or won't run the datadog), package provides a simple interface 
 
 * Stores your metrics locally at **per second** resolution, supporting both counters and guages.  This might be a better than the statsd interface you've been using previously.
 * Timinig and Histograms are supported but the descriptive statistics are hardwired and not configurable (but easy to add).
+* Allows setting a global namespace
+* Allows setting global tags (applied to every metric)
 * Uploads your metrics to DataDog every 15 seconds
 
 # What doesn't this do?
 
-* Anything that's not a guage or counter or histogram: logs, traces, service checks, events.  Also not supported are tags (but would be easy enough to add).
+* Anything that's not a guage or counter or histogram: logs, traces, service checks, events.
+* Per-metric tags are not supported
 * Error handling is probably not awesome.  Pull requests welcome.
 
 ## This is not an official client
