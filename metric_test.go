@@ -7,7 +7,7 @@ import (
 )
 
 func TestBasicTest(t *testing.T) {
-	c, err := New("hostname", "foo")
+	c, err := New("hostname", "myapp", "foo")
 	if err != nil {
 		t.Fatalf("unable to create: %s", err)
 	}

@@ -96,6 +96,7 @@ func (m *Metric) Add(now float64, val float64) {
 type Client struct {
 	Series     []*Metric          `json:"series"` // raw data
 	hostname   string             // hostname
+	namespace  string             // namespace prefix if any
 	metrics    map[string]*Metric // map of name to metric for fast lookup
 	histograms map[string]*ExactHistogram
 	now        func() float64 // for testing
@@ -107,10 +108,17 @@ type Client struct {
 }
 
 // New creates a new datadog client
-func New(hostname string, apikey string) (*Client, error) {
+func New(hostname string, namespace string, apikey string) (*Client, error) {
+
+	// if we have a namespace, and it doesn't end in a "." then add one
+	if namespace != "" && namespace[len(namespace)-1] != '.' {
+		namespace += "."
+	}
+
 	client := &Client{
 		now:        now,
 		hostname:   hostname,
+		namespace:  namespace,
 		metrics:    make(map[string]*Metric),
 		histograms: make(map[string]*ExactHistogram),
 		flushTime:  time.Second * 15,
@@ -143,7 +151,7 @@ func (c *Client) Gauge(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(name, "gauge", c.hostname)
+		m = NewMetric(c.namespace+name, "gauge", c.hostname)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -157,7 +165,7 @@ func (c *Client) Count(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(name, "counter", c.hostname)
+		m = NewMetric(c.namespace+name, "counter", c.hostname)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -219,27 +227,27 @@ func (c *Client) Snapshot() *Client {
 		}
 
 		// MAX
-		m := NewMetric(name+".max", "guage", c.hostname)
+		m := NewMetric(c.namespace+name+".max", "guage", c.hostname)
 		m.Add(c.now(), hr.max)
 		snap.Series = append(snap.Series, m)
 
 		// COUNT
-		m = NewMetric(name+".count", "guage", c.hostname)
+		m = NewMetric(c.namespace+name+".count", "guage", c.hostname)
 		m.Add(c.now(), hr.count)
 		snap.Series = append(snap.Series, m)
 
 		// AVERAGE
-		m = NewMetric(name+".avg", "guage", c.hostname)
+		m = NewMetric(c.namespace+name+".avg", "guage", c.hostname)
 		m.Add(c.now(), hr.avg)
 		snap.Series = append(snap.Series, m)
 
 		// MEDIAN
-		m = NewMetric(name+".median", "guage", c.hostname)
+		m = NewMetric(c.namespace+name+".median", "guage", c.hostname)
 		m.Add(c.now(), hr.median)
 		snap.Series = append(snap.Series, m)
 
 		// 95 percentile
-		m = NewMetric(name+".95percentile", "guage", c.hostname)
+		m = NewMetric(c.namespace+name+".95percentile", "guage", c.hostname)
 		m.Add(c.now(), hr.p95)
 		snap.Series = append(snap.Series, m)
 	}
