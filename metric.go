@@ -202,7 +202,7 @@ func (c *Client) Snapshot() *Client {
 		c.Unlock()
 		return nil
 	}
-	ccopy := Client{
+	snap := Client{
 		Series:     c.Series,
 		histograms: c.histograms,
 	}
@@ -210,18 +210,6 @@ func (c *Client) Snapshot() *Client {
 	c.histograms = make(map[string]*ExactHistogram)
 	c.Series = nil
 	c.Unlock()
-	return &ccopy
-}
-
-// Flush forces a flush of the pending commands in the buffer
-func (c *Client) Flush() error {
-	if c == nil {
-		return nil
-	}
-	snap := c.Snapshot()
-	if snap == nil {
-		return nil
-	}
 
 	// now for histograms, convert to various descriptive statistic guages
 	for name, h := range snap.histograms {
@@ -254,6 +242,19 @@ func (c *Client) Flush() error {
 		m = NewMetric(name+".95percentile", "guage", c.hostname)
 		m.Add(c.now(), hr.p95)
 		snap.Series = append(snap.Series, m)
+	}
+
+	return &snap
+}
+
+// Flush forces a flush of the pending commands in the buffer
+func (c *Client) Flush() error {
+	if c == nil {
+		return nil
+	}
+	snap := c.Snapshot()
+	if snap == nil {
+		return nil
 	}
 
 	raw, err := json.Marshal(snap)

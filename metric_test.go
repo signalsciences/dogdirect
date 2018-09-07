@@ -15,8 +15,11 @@ func TestBasicTest(t *testing.T) {
 	c.Incr("counter")
 	c.Gauge("foobar", 123.4)
 	c.Gauge("foobar", 666.6)
-
-	raw, err := json.MarshalIndent(c, "", "  ")
+	for i := 0; i < 10; i++ {
+		c.Histogram("histo", float64(i))
+	}
+	snap := c.Snapshot()
+	raw, err := json.MarshalIndent(snap, "", "  ")
 	if err != nil {
 		t.Fatalf("can't marhsall: %s", err)
 	}
