@@ -77,7 +77,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to get hostname: %s", err)
 	}
-	client, err = ddd.New(name, os.Getenv("DD_API_KEY"))
+	client, err = dogdirect.New(name, os.Getenv("DD_API_KEY"))
 	if err != nil {
 		log.Fatalf("unable to create: %s", err)
 	}
