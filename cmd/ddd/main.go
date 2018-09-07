@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/signalsciences/ddd"
+	"github.com/signalsciences/dogdirect"
 )
 
-var client *ddd.Client
+var client *dogdirect.Client
 
 func gauge(args []string) ([]string, error) {
 	val, err := strconv.ParseFloat(args[1], 64)

@@ -1,4 +1,4 @@
-package ddd
+package dogdirect
 
 import (
 	"sort"
