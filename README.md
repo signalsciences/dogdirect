@@ -1,6 +1,6 @@
-# ddd (DataDog Direct)
+# (data)dogdirect
 
-Directly send metrics to datadog via the HTTP api using golang
+Directly send metrics to datadog via the HTTP api using golang.
 
 # What Problem Are We Solving?
 
@@ -18,12 +18,17 @@ So if you can't (or won't run the datadog), package provides a simple interface 
 # What does this do?
 
 * Stores your metrics locally at **per second** resolution, supporting both counters and guages.  This might be a better than the statsd interface you've been using previously.
+* Timinig and Histograms are supported but the descriptive statistics are hardwired and not configurable (but easy to add).
 * Uploads your metrics to DataDog every 15 seconds
 
 # What doesn't this do?
 
-* Anything that's not a guage or counter: histograms, logs, traces, service checks, events.  Also not supported are tags (but would be easy enough to add).
+* Anything that's not a guage or counter or histogram: logs, traces, service checks, events.  Also not supported are tags (but would be easy enough to add).
 * Error handling is probably not awesome.  Pull requests welcome.
+
+## This is not an official client
+
+This is not an official client.  This project is not sponsored or blessed by DataDog.
 
 # References and Credits
 
@@ -40,6 +45,10 @@ https://docs.datadoghq.com/api/?lang=bash#post-timeseries-points
 In particular, much of this code is based on [statsd.go](https://github.com/DataDog/datadog-go/blob/master/statsd/statsd.go).   I have mixed feelings about the "watcher" being glued into the main object but seems to work for now.
 
 Interestingly, the buffered implimentation doesn't consolidate anything.  If you do 100 increments of a single stat, it will send 100 statsd messages.
+
+## datadog-agent
+
+The golang [datadog agent](https://github.com/DataDog/datadog-agent) has some nuggest, especially the [metrics](https://github.com/DataDog/datadog-agent/tree/master/pkg/metrics).  Unfortunately the metrics package can't be used standalone as it glues in a bunch of extraneous stuff specific to DataDog (logging, configuration).  That's too bad.
 
 ## strip/veneue
 
