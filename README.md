@@ -1,6 +1,6 @@
 # (data)dogdirect
 
-Directly send metrics to datadog via the HTTP api using golang.
+Directly send metrics to [DataDog](https://www.datadoghq.com/) via the HTTP API using [golang](https://golang.org).
 
 # What Problem Are We Solving?
 
