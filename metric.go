@@ -67,6 +67,7 @@ func NewMetric(name, mtype, host string, tags []string) *Metric {
 		MetricType: mtype,
 		Hostname:   host,
 		Tags:       tags,
+		Interval:   1,
 	}
 }
 
