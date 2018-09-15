@@ -13,7 +13,9 @@ func TestBasicTest(t *testing.T) {
 		t.Fatalf("unable to create: %s", err)
 	}
 	c.Incr("counter")
+	c.Incr("anotherc")
 	c.Incr("counter")
+	c.Incr("anotherc")
 	c.Gauge("foobar", 123.4)
 	c.Gauge("foobar", 666.6)
 	for i := 0; i < 10; i++ {
