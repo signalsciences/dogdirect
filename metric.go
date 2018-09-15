@@ -222,7 +222,7 @@ func (c *Client) Histogram(name string, val float64) error {
 // Snapshot makes a copy of the data and resets everything locally
 func (c *Client) Snapshot() *Client {
 	c.Lock()
-	if len(c.Series) == 0 {
+	if len(c.Series) == 0 && len(c.histograms) == 0 {
 		c.Unlock()
 		return nil
 	}
