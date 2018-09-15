@@ -171,11 +171,11 @@ func (c *Client) Count(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(c.namespace+name, TypeCount, c.hostname, c.tags, c.flushTime)
+		m = NewMetric(c.namespace+name, TypeRate, c.hostname, c.tags, c.flushTime)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
-	m.Add(c.now(), value)
+	m.Add(c.now(), value/float64(c.flushTime))
 	c.Unlock()
 	return nil
 }
