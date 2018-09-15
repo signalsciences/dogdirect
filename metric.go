@@ -80,16 +80,6 @@ func NewMetric(name, mtype, host string, tags []string, interval int) *Metric {
 
 // Add uses a new observation and adjusts the metric accordingly
 func (m *Metric) Add(now float64, val float64) {
-
-	/*
-		vlast := len(m.Value) - 1
-
-		// if first point, OR if last point is in a previous interval
-		if vlast == -1 || m.Value[vlast][0] != now {
-			m.Value = append(m.Value, [2]float64{now, val})
-			return
-		}
-	*/
 	m.Value[0][0] = now
 	// last point is in current interval
 	switch m.MetricType {
