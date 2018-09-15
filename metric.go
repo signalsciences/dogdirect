@@ -171,7 +171,7 @@ func (c *Client) Count(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(c.namespace+name, TypeCount, c.hostname, c.tags, 0)
+		m = NewMetric(c.namespace+name, TypeCount, c.hostname, c.tags, c.flushTime)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
