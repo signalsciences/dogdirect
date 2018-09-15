@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestBasicTest(t *testing.T) {
@@ -18,6 +19,9 @@ func TestBasicTest(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		c.Histogram("histo", float64(i))
 	}
+	time.Sleep(time.Second)
+	c.Incr("counter")
+	c.Incr("counter")
 	snap := c.Snapshot()
 	raw, err := json.MarshalIndent(snap, "", "  ")
 	if err != nil {
