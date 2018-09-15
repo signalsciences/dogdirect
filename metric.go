@@ -248,8 +248,8 @@ func (c *Client) Snapshot() *Client {
 		snap.Series = append(snap.Series, m)
 
 		// COUNT
-		m = NewMetric(c.namespace+name+".count", TypeCount, c.hostname, c.tags, c.flushTime)
-		m.Add(c.now(), hr.count)
+		m = NewMetric(c.namespace+name+".count", TypeRate, c.hostname, c.tags, c.flushTime)
+		m.Add(c.now(), hr.count/float64(c.flushTime))
 		snap.Series = append(snap.Series, m)
 
 		// AVERAGE
