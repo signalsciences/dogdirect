@@ -45,15 +45,22 @@ A list of tags associated with the metric
 
 */
 
+// todo: make proper type
+const (
+	TypeGauge = "gauge"
+	TypeRate  = "rate"
+	TypeCount = "count"
+)
+
 // Metric is a data structure that represents the JSON that Datadog
 // wants when posting to the API
 type Metric struct {
-	Name       string       `json:"metric"`
-	Value      [][2]float64 `json:"points"`
-	MetricType string       `json:"type"`
-	Hostname   string       `json:"host,omitempty"`
-	Tags       []string     `json:"tags,omitempty"`
-	Interval   int32        `json:"interval,omitempty"`
+	Name       string        `json:"metric"`
+	Value      [1][2]float64 `json:"points"`
+	MetricType string        `json:"type"`
+	Hostname   string        `json:"host,omitempty"`
+	Tags       []string      `json:"tags,omitempty"`
+	Interval   int           `json:"interval,omitempty"`
 }
 
 func now() float64 {
@@ -61,36 +68,40 @@ func now() float64 {
 }
 
 // NewMetric creates a new metric
-func NewMetric(name, mtype, host string, tags []string) *Metric {
+func NewMetric(name, mtype, host string, tags []string, interval int) *Metric {
 	return &Metric{
 		Name:       name,
 		MetricType: mtype,
 		Hostname:   host,
 		Tags:       tags,
-		Interval:   1,
+		Interval:   interval,
 	}
 }
 
 // Add uses a new observation and adjusts the metric accordingly
 func (m *Metric) Add(now float64, val float64) {
-	vlast := len(m.Value) - 1
 
-	// if first point, OR if last point is in a previous interval
-	if vlast == -1 || m.Value[vlast][0] != now {
-		m.Value = append(m.Value, [2]float64{now, val})
-		return
-	}
+	/*
+		vlast := len(m.Value) - 1
 
+		// if first point, OR if last point is in a previous interval
+		if vlast == -1 || m.Value[vlast][0] != now {
+			m.Value = append(m.Value, [2]float64{now, val})
+			return
+		}
+	*/
+	m.Value[0][0] = now
 	// last point is in current interval
 	switch m.MetricType {
-	case "rate":
+	case TypeCount:
+		m.Value[0][1] += val
+	case TypeRate:
+		// TODO divide by interval
 		// add new observation to existing
-		m.Value[vlast][1] += val
-	case "gauge":
+		m.Value[0][1] += val
+	case TypeGauge:
 		// overwrite with new observation
-		m.Value[vlast][1] = val
-	default:
-		panic("metric type not supported")
+		m.Value[0][1] = val
 	}
 }
 
@@ -155,7 +166,8 @@ func (c *Client) Gauge(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(c.namespace+name, "gauge", c.hostname, c.tags)
+		// interval is 0 == no interval
+		m = NewMetric(c.namespace+name, TypeGauge, c.hostname, c.tags, 0)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -169,12 +181,7 @@ func (c *Client) Count(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		// note: it is NOT count or counter (unclear what is accepted)
-		// I believe counters are only for monotonic (always increasing)
-		// metrics typically used in hardware or network metrics such as
-		// bytes out, and then difference/derviative is used to compute a 
-		// rate
-		m = NewMetric(c.namespace+name, "rate", c.hostname, c.tags)
+		m = NewMetric(c.namespace+name, TypeCount, c.hostname, c.tags, 0)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -236,27 +243,27 @@ func (c *Client) Snapshot() *Client {
 		}
 
 		// MAX
-		m := NewMetric(c.namespace+name+".max", "guage", c.hostname, c.tags)
+		m := NewMetric(c.namespace+name+".max", TypeGauge, c.hostname, c.tags, 0)
 		m.Add(c.now(), hr.max)
 		snap.Series = append(snap.Series, m)
 
 		// COUNT
-		m = NewMetric(c.namespace+name+".count", "guage", c.hostname, c.tags)
+		m = NewMetric(c.namespace+name+".count", TypeGauge, c.hostname, c.tags, 0)
 		m.Add(c.now(), hr.count)
 		snap.Series = append(snap.Series, m)
 
 		// AVERAGE
-		m = NewMetric(c.namespace+name+".avg", "guage", c.hostname, c.tags)
+		m = NewMetric(c.namespace+name+".avg", TypeGauge, c.hostname, c.tags, 0)
 		m.Add(c.now(), hr.avg)
 		snap.Series = append(snap.Series, m)
 
 		// MEDIAN
-		m = NewMetric(c.namespace+name+".median", "guage", c.hostname, c.tags)
+		m = NewMetric(c.namespace+name+".median", TypeGauge, c.hostname, c.tags, 0)
 		m.Add(c.now(), hr.median)
 		snap.Series = append(snap.Series, m)
 
 		// 95 percentile
-		m = NewMetric(c.namespace+name+".95percentile", "guage", c.hostname, c.tags)
+		m = NewMetric(c.namespace+name+".95percentile", TypeGauge, c.hostname, c.tags, 0)
 		m.Add(c.now(), hr.p95)
 		snap.Series = append(snap.Series, m)
 	}
