@@ -115,7 +115,7 @@ type Client struct {
 	histograms map[string]*ExactHistogram
 	now        func() float64 // for testing
 	writer     io.WriteCloser // where output goes
-	flushTime  time.Duration  // how often to upload
+	flushTime  int            // how often to upload in seconds
 
 	stop chan struct{}
 	sync.Mutex
@@ -136,7 +136,7 @@ func New(hostname string, apikey string, namespace string, tags []string) (*Clie
 		tags:       tags,
 		metrics:    make(map[string]*Metric),
 		histograms: make(map[string]*ExactHistogram),
-		flushTime:  time.Second * 15,
+		flushTime:  15,
 		stop:       make(chan struct{}, 1),
 		writer:     NewWriter(apikey, time.Second*5),
 	}
@@ -145,7 +145,7 @@ func New(hostname string, apikey string, namespace string, tags []string) (*Clie
 }
 
 func (c *Client) watch() {
-	ticker := time.NewTicker(c.flushTime)
+	ticker := time.NewTicker(time.Second * time.Duration(c.flushTime))
 
 	for {
 		select {
@@ -248,7 +248,7 @@ func (c *Client) Snapshot() *Client {
 		snap.Series = append(snap.Series, m)
 
 		// COUNT
-		m = NewMetric(c.namespace+name+".count", TypeGauge, c.hostname, c.tags, 0)
+		m = NewMetric(c.namespace+name+".count", TypeCount, c.hostname, c.tags, c.flushTime)
 		m.Add(c.now(), hr.count)
 		snap.Series = append(snap.Series, m)
 
