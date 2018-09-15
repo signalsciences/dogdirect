@@ -77,10 +77,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to get hostname: %s", err)
 	}
-	client, err = dogdirect.New(name, os.Getenv("DD_API_KEY"))
+	// todo, be able to add namespace and tags
+	client, err = dogdirect.New(name, os.Getenv("DD_API_KEY"), "nickg", nil)
 	if err != nil {
 		log.Fatalf("unable to create: %s", err)
 	}
+	defer client.Close()
 
 	flag.Parse()
 	args := flag.Args()
