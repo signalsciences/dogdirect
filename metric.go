@@ -83,7 +83,7 @@ func (m *Metric) Add(now float64, val float64) {
 
 	// last point is in current interval
 	switch m.MetricType {
-	case "count":
+	case "rate":
 		// add new observation to existing
 		m.Value[vlast][1] += val
 	case "gauge":
@@ -169,7 +169,12 @@ func (c *Client) Count(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(c.namespace+name, "count", c.hostname, c.tags)
+		// note: it is NOT count or counter (unclear what is accepted)
+		// I believe counters are only for monotonic (always increasing)
+		// metrics typically used in hardware or network metrics such as
+		// bytes out, and then difference/derviative is used to compute a 
+		// rate
+		m = NewMetric(c.namespace+name, "rate", c.hostname, c.tags)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
