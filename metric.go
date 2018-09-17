@@ -200,7 +200,9 @@ func (c *Client) Snapshot() *Client {
 		Series:     c.Series,
 		metrics:    c.metrics,
 		histograms: c.histograms,
-		flushTime: c.flushTime,
+		namespace:  c.namespace,
+		tags:       c.tags,
+		flushTime:  c.flushTime,
 	}
 	c.metrics = make(map[string]*Metric)
 	c.histograms = make(map[string]*ExactHistogram)
