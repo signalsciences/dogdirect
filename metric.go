@@ -68,30 +68,11 @@ func now() float64 {
 }
 
 // NewMetric creates a new metric
-func NewMetric(name, mtype, host string, tags []string, interval int) *Metric {
+func NewMetric(name string, mtype string, tags []string) *Metric {
 	return &Metric{
 		Name:       name,
 		MetricType: mtype,
-		Hostname:   host,
 		Tags:       tags,
-		Interval:   interval,
-	}
-}
-
-// Add uses a new observation and adjusts the metric accordingly
-func (m *Metric) Add(now float64, val float64) {
-	m.Value[0][0] = now
-	// last point is in current interval
-	switch m.MetricType {
-	case TypeCount:
-		m.Value[0][1] += val
-	case TypeRate:
-		// TODO divide by interval
-		// add new observation to existing
-		m.Value[0][1] += val
-	case TypeGauge:
-		// overwrite with new observation
-		m.Value[0][1] = val
 	}
 }
 
@@ -156,12 +137,11 @@ func (c *Client) Gauge(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		// interval is 0 == no interval
-		m = NewMetric(c.namespace+name, TypeGauge, c.hostname, c.tags, 0)
+		m = NewMetric(c.namespace+name, TypeGauge, c.tags)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
-	m.Add(c.now(), value)
+	m.Value[0][1] = value
 	c.Unlock()
 	return nil
 }
@@ -171,11 +151,11 @@ func (c *Client) Count(name string, value float64) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(c.namespace+name, TypeRate, c.hostname, c.tags, c.flushTime)
+		m = NewMetric(c.namespace+name, TypeRate, c.tags)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
-	m.Add(c.now(), value/float64(c.flushTime))
+	m.Value[0][1] += value / float64(c.flushTime)
 	c.Unlock()
 	return nil
 }
@@ -218,7 +198,9 @@ func (c *Client) Snapshot() *Client {
 	}
 	snap := Client{
 		Series:     c.Series,
+		metrics:    c.metrics,
 		histograms: c.histograms,
+		flushTime: c.flushTime,
 	}
 	c.metrics = make(map[string]*Metric)
 	c.histograms = make(map[string]*ExactHistogram)
@@ -231,31 +213,18 @@ func (c *Client) Snapshot() *Client {
 		if hr.count == 0 {
 			continue
 		}
+		snap.Count(name+".count", hr.count)
+		snap.Gauge(name+".max", hr.max)
+		snap.Gauge(name+".avg", hr.avg)
+		snap.Gauge(name+".median", hr.median)
+		snap.Gauge(name+".95percentile", hr.p95)
+	}
 
-		// MAX
-		m := NewMetric(c.namespace+name+".max", TypeGauge, c.hostname, c.tags, 0)
-		m.Add(c.now(), hr.max)
-		snap.Series = append(snap.Series, m)
-
-		// COUNT
-		m = NewMetric(c.namespace+name+".count", TypeRate, c.hostname, c.tags, c.flushTime)
-		m.Add(c.now(), hr.count/float64(c.flushTime))
-		snap.Series = append(snap.Series, m)
-
-		// AVERAGE
-		m = NewMetric(c.namespace+name+".avg", TypeGauge, c.hostname, c.tags, 0)
-		m.Add(c.now(), hr.avg)
-		snap.Series = append(snap.Series, m)
-
-		// MEDIAN
-		m = NewMetric(c.namespace+name+".median", TypeGauge, c.hostname, c.tags, 0)
-		m.Add(c.now(), hr.median)
-		snap.Series = append(snap.Series, m)
-
-		// 95 percentile
-		m = NewMetric(c.namespace+name+".95percentile", TypeGauge, c.hostname, c.tags, 0)
-		m.Add(c.now(), hr.p95)
-		snap.Series = append(snap.Series, m)
+	currentTime := c.now()
+	for i := 0; i < len(snap.Series); i++ {
+		snap.Series[i].Value[0][0] = currentTime
+		snap.Series[i].Hostname = c.hostname
+		snap.Series[i].Interval = c.flushTime
 	}
 
 	return &snap

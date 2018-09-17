@@ -4,7 +4,7 @@ import (
 	"sort"
 )
 
-// HistogramResults returns some descriptive statistics
+// HistogramResult returns some descriptive statistics
 // Add other stats as needed
 type HistogramResult struct {
 	count  float64
@@ -25,6 +25,7 @@ type ExactHistogram struct {
 	samples []float64
 }
 
+// NewExactHistogram creates a new object
 func NewExactHistogram(points int) *ExactHistogram {
 	if points == 0 {
 		return &ExactHistogram{}
@@ -34,6 +35,7 @@ func NewExactHistogram(points int) *ExactHistogram {
 	}
 }
 
+// Add adds a data point
 func (he *ExactHistogram) Add(val float64) {
 	he.samples = append(he.samples, val)
 }
