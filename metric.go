@@ -133,11 +133,17 @@ func (c *Client) watch() {
 }
 
 // Gauge represent an observation
-func (c *Client) Gauge(name string, value float64) error {
+func (c *Client) Gauge(name string, value float64, tags ...string) error {
+	fullname := c.namespace + name
+	if tags == nil {
+		tags = c.tags
+	} else {
+		tags = unique(append(c.tags, tags...))
+	}
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(c.namespace+name, TypeGauge, c.tags)
+		m = NewMetric(fullname, TypeGauge, tags)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -147,11 +153,17 @@ func (c *Client) Gauge(name string, value float64) error {
 }
 
 // Count represents a count of events
-func (c *Client) Count(name string, value float64) error {
+func (c *Client) Count(name string, value float64, tags ...string) error {
+	fullname := c.namespace + name
+	if tags == nil {
+		tags = c.tags
+	} else {
+		tags = unique(append(c.tags, tags...))
+	}
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(c.namespace+name, TypeRate, c.tags)
+		m = NewMetric(fullname, TypeRate, tags)
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -161,23 +173,23 @@ func (c *Client) Count(name string, value float64) error {
 }
 
 // Incr adds one event count, same as Count(name, 1)
-func (c *Client) Incr(name string) error {
-	return c.Count(name, 1.0)
+func (c *Client) Incr(name string, tags ...string) error {
+	return c.Count(name, 1.0, tags...)
 }
 
 // Decr subtracts one event, same as Count(name, -1)
-func (c *Client) Decr(name string) error {
-	return c.Count(name, -1.0)
+func (c *Client) Decr(name string, tags ...string) error {
+	return c.Count(name, -1.0, tags...)
 }
 
 // Timing records a duration
-func (c *Client) Timing(name string, val time.Duration) error {
+func (c *Client) Timing(name string, val time.Duration, tags ...string) error {
 	// datadog works in milliseconds
-	return c.Histogram(name, val.Seconds()*1000)
+	return c.Histogram(name, val.Seconds()*1000, tags...)
 }
 
 // Histogram records a value that will be used in aggregate
-func (c *Client) Histogram(name string, val float64) error {
+func (c *Client) Histogram(name string, val float64, tags ...string) error {
 	c.Lock()
 	h := c.histograms[name]
 	if h == nil {
