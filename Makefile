@@ -2,7 +2,7 @@
 build: hooks  ## build, install, lint, test
 	./scripts/build.sh
 
-bench:
+bench:  ## run testing benchmarks
 	go test -benchmem -bench .
 
 test: build
