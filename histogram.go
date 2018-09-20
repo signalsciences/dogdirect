@@ -23,15 +23,17 @@ type HistogramResult struct {
 //
 type ExactHistogram struct {
 	samples []float64
+	tags    []string
 }
 
 // NewExactHistogram creates a new object
-func NewExactHistogram(points int) *ExactHistogram {
+func NewExactHistogram(points int, tags []string) *ExactHistogram {
 	if points == 0 {
 		return &ExactHistogram{}
 	}
 	return &ExactHistogram{
 		samples: make([]float64, 0, points),
+		tags:    tags,
 	}
 }
 
