@@ -17,7 +17,7 @@ func gauge(args []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.Gauge(args[0], val)
+	client.Gauge(args[0], val, nil)
 	return args[2:], nil
 }
 func count(args []string) ([]string, error) {
@@ -25,17 +25,17 @@ func count(args []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.Count(args[0], val)
+	client.Count(args[0], val, nil)
 	return args[2:], nil
 }
 
 func incr(args []string) ([]string, error) {
-	client.Incr(args[0])
+	client.Incr(args[0], nil)
 	return args[1:], nil
 }
 
 func decr(args []string) ([]string, error) {
-	client.Decr(args[0])
+	client.Decr(args[0], nil)
 	return args[1:], nil
 }
 
@@ -73,12 +73,12 @@ var cmdmap = map[string]cmdfn{
 func main() {
 
 	var err error
-	name, err := os.Hostname()
+	hostname, err := os.Hostname()
 	if err != nil {
 		log.Fatalf("unable to get hostname: %s", err)
 	}
 	// todo, be able to add namespace and tags
-	client, err = dogdirect.New(name, os.Getenv("DD_API_KEY"), "nickg", nil)
+	client, err = dogdirect.New(hostname, os.Getenv("DD_API_KEY"))
 	if err != nil {
 		log.Fatalf("unable to create: %s", err)
 	}
