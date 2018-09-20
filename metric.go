@@ -93,18 +93,10 @@ type Client struct {
 }
 
 // New creates a new datadog client
-func New(hostname string, apikey string, namespace string, tags []string) (*Client, error) {
-
-	// if we have a namespace, and it doesn't end in a "." then add one
-	if namespace != "" && namespace[len(namespace)-1] != '.' {
-		namespace += "."
-	}
-
+func New(hostname string, apikey string) (*Client, error) {
 	client := &Client{
 		now:        now,
 		hostname:   hostname,
-		namespace:  namespace,
-		tags:       tags,
 		metrics:    make(map[string]*Metric),
 		histograms: make(map[string]*ExactHistogram),
 		flushTime:  15,
@@ -133,17 +125,11 @@ func (c *Client) watch() {
 }
 
 // Gauge represent an observation
-func (c *Client) Gauge(name string, value float64, tags ...string) error {
-	fullname := c.namespace + name
-	if tags == nil {
-		tags = c.tags
-	} else {
-		tags = unique(append(c.tags, tags...))
-	}
+func (c *Client) Gauge(name string, value float64, tags []string) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(fullname, TypeGauge, tags)
+		m = NewMetric(name, TypeGauge, unique(tags))
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -153,17 +139,11 @@ func (c *Client) Gauge(name string, value float64, tags ...string) error {
 }
 
 // Count represents a count of events
-func (c *Client) Count(name string, value float64, tags ...string) error {
-	fullname := c.namespace + name
-	if tags == nil {
-		tags = c.tags
-	} else {
-		tags = unique(append(c.tags, tags...))
-	}
+func (c *Client) Count(name string, value float64, tags []string) error {
 	c.Lock()
 	m, ok := c.metrics[name]
 	if !ok {
-		m = NewMetric(fullname, TypeRate, tags)
+		m = NewMetric(name, TypeRate, unique(tags))
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
@@ -173,27 +153,27 @@ func (c *Client) Count(name string, value float64, tags ...string) error {
 }
 
 // Incr adds one event count, same as Count(name, 1)
-func (c *Client) Incr(name string, tags ...string) error {
-	return c.Count(name, 1.0, tags...)
+func (c *Client) Incr(name string, tags []string) error {
+	return c.Count(name, 1.0, tags)
 }
 
 // Decr subtracts one event, same as Count(name, -1)
-func (c *Client) Decr(name string, tags ...string) error {
-	return c.Count(name, -1.0, tags...)
+func (c *Client) Decr(name string, tags []string) error {
+	return c.Count(name, -1.0, tags)
 }
 
 // Timing records a duration
-func (c *Client) Timing(name string, val time.Duration, tags ...string) error {
+func (c *Client) Timing(name string, val time.Duration, tags []string) error {
 	// datadog works in milliseconds
-	return c.Histogram(name, val.Seconds()*1000, tags...)
+	return c.Histogram(name, val.Seconds()*1000, tags)
 }
 
 // Histogram records a value that will be used in aggregate
-func (c *Client) Histogram(name string, val float64, tags ...string) error {
+func (c *Client) Histogram(name string, val float64, tags []string) error {
 	c.Lock()
 	h := c.histograms[name]
 	if h == nil {
-		h = NewExactHistogram(1000)
+		h = NewExactHistogram(1000, tags)
 		c.histograms[name] = h
 	}
 	h.Add(val)
@@ -212,8 +192,6 @@ func (c *Client) Snapshot() *Client {
 		Series:     c.Series,
 		metrics:    c.metrics,
 		histograms: c.histograms,
-		namespace:  c.namespace,
-		tags:       c.tags,
 		flushTime:  c.flushTime,
 	}
 	c.metrics = make(map[string]*Metric)
@@ -221,17 +199,17 @@ func (c *Client) Snapshot() *Client {
 	c.Series = nil
 	c.Unlock()
 
-	// now for histograms, convert to various descriptive statistic guages
+	// now for histograms, convert to various descriptive statistic gauges
 	for name, h := range snap.histograms {
 		hr := h.Flush()
 		if hr.count == 0 {
 			continue
 		}
-		snap.Count(name+".count", hr.count)
-		snap.Gauge(name+".max", hr.max)
-		snap.Gauge(name+".avg", hr.avg)
-		snap.Gauge(name+".median", hr.median)
-		snap.Gauge(name+".95percentile", hr.p95)
+		snap.Count(name+".count", hr.count, h.tags)
+		snap.Gauge(name+".max", hr.max, h.tags)
+		snap.Gauge(name+".avg", hr.avg, h.tags)
+		snap.Gauge(name+".median", hr.median, h.tags)
+		snap.Gauge(name+".95percentile", hr.p95, h.tags)
 	}
 
 	currentTime := c.now()
