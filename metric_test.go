@@ -23,10 +23,12 @@ func TestBasicTest(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		c.Histogram("histo", float64(i), nil)
 	}
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 	c.Incr("counter", nil)
 	c.Incr("counter", nil)
 	snap := c.Snapshot()
+	snap.finalize(c.now())
+
 	raw, err := json.MarshalIndent(snap, "", "  ")
 	if err != nil {
 		t.Fatalf("can't marhsall: %s", err)

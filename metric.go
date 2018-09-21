@@ -55,24 +55,24 @@ const (
 // Metric is a data structure that represents the JSON that Datadog
 // wants when posting to the API
 type Metric struct {
-	Name       string        `json:"metric"`
-	Value      [1][2]float64 `json:"points"`
-	MetricType string        `json:"type"`
-	Hostname   string        `json:"host,omitempty"`
-	Tags       []string      `json:"tags,omitempty"`
-	Interval   int           `json:"interval,omitempty"`
+	Name     string        `json:"metric"`
+	Value    [1][2]float64 `json:"points"`
+	Type     string        `json:"type"`
+	Hostname string        `json:"host,omitempty"`
+	Tags     []string      `json:"tags,omitempty"`
+	Interval int           `json:"interval,omitempty"`
 }
 
 func now() float64 {
-	return float64(time.Now().UTC().Unix())
+	return float64(time.Now().Unix())
 }
 
 // NewMetric creates a new metric
 func NewMetric(name string, mtype string, tags []string) *Metric {
 	return &Metric{
-		Name:       name,
-		MetricType: mtype,
-		Tags:       tags,
+		Name: name,
+		Type: mtype,
+		Tags: tags,
 	}
 }
 
@@ -85,7 +85,7 @@ type Client struct {
 	histograms map[string]*ExactHistogram
 	now        func() float64 // for testing
 	writer     io.WriteCloser // where output goes
-	flushTime  int            // how often to upload in seconds
+	lastFlush  float64        // unix epoch as float64(t.Now().Unix())
 
 	stop chan struct{}
 	sync.Mutex
@@ -98,29 +98,10 @@ func New(hostname string, apikey string) (*Client, error) {
 		hostname:   hostname,
 		metrics:    make(map[string]*Metric),
 		histograms: make(map[string]*ExactHistogram),
-		flushTime:  15,
-		stop:       make(chan struct{}, 1),
 		writer:     NewWriter(apikey, time.Second*5),
+		lastFlush:  now(),
 	}
-	go client.watch()
 	return client, nil
-}
-
-func (c *Client) watch() {
-	ticker := time.NewTicker(time.Second * time.Duration(c.flushTime))
-
-	for {
-		select {
-		case <-ticker.C:
-			// TODO error is squashed
-			if err := c.Flush(); err != nil {
-				// TODO: need call out
-			}
-		case <-c.stop:
-			ticker.Stop()
-			return
-		}
-	}
 }
 
 // Gauge represent an observation
@@ -146,7 +127,9 @@ func (c *Client) Count(name string, value float64, tags []string) error {
 		c.Series = append(c.Series, m)
 		c.metrics[name] = m
 	}
-	m.Value[0][1] += value / float64(c.flushTime)
+	// note, this sum must be divided by the interval length
+	//  before sending.
+	m.Value[0][1] += value
 	c.Unlock()
 	return nil
 }
@@ -183,42 +166,50 @@ func (c *Client) Histogram(name string, val float64, tags []string) error {
 // Snapshot makes a copy of the data and resets everything locally
 func (c *Client) Snapshot() *Client {
 	c.Lock()
-	if len(c.Series) == 0 && len(c.histograms) == 0 {
+	defer func() {
+		c.lastFlush = c.now()
 		c.Unlock()
+	}()
+
+	if len(c.Series) == 0 && len(c.histograms) == 0 {
 		return nil
 	}
 	snap := Client{
 		Series:     c.Series,
 		metrics:    c.metrics,
 		histograms: c.histograms,
-		flushTime:  c.flushTime,
+		lastFlush:  c.lastFlush,
 	}
 	c.metrics = make(map[string]*Metric)
 	c.histograms = make(map[string]*ExactHistogram)
 	c.Series = nil
-	c.Unlock()
+	return &snap
+}
 
-	// now for histograms, convert to various descriptive statistic gauges
-	for name, h := range snap.histograms {
+// not locked.. for use locally with snapshots
+func (c *Client) finalize(nowUnix float64) {
+	interval := nowUnix - c.lastFlush
+
+	// histograms: convert to various descriptive statistic gauges
+	for name, h := range c.histograms {
 		hr := h.Flush()
 		if hr.count == 0 {
 			continue
 		}
-		snap.Count(name+".count", hr.count, h.tags)
-		snap.Gauge(name+".max", hr.max, h.tags)
-		snap.Gauge(name+".avg", hr.avg, h.tags)
-		snap.Gauge(name+".median", hr.median, h.tags)
-		snap.Gauge(name+".95percentile", hr.p95, h.tags)
+		c.Count(name+".count", hr.count, h.tags)
+		c.Gauge(name+".max", hr.max, h.tags)
+		c.Gauge(name+".avg", hr.avg, h.tags)
+		c.Gauge(name+".median", hr.median, h.tags)
+		c.Gauge(name+".95percentile", hr.p95, h.tags)
 	}
-
-	currentTime := c.now()
-	for i := 0; i < len(snap.Series); i++ {
-		snap.Series[i].Value[0][0] = currentTime
-		snap.Series[i].Hostname = c.hostname
-		snap.Series[i].Interval = c.flushTime
+	for i := 0; i < len(c.Series); i++ {
+		c.Series[i].Value[0][0] = nowUnix
+		c.Series[i].Hostname = c.hostname
+		c.Series[i].Interval = int(interval)
+		if c.Series[i].Type == "rate" {
+			c.Series[i].Value[0][1] /= interval
+		}
 	}
-
-	return &snap
 }
 
 // Flush forces a flush of the pending commands in the buffer
@@ -231,6 +222,9 @@ func (c *Client) Flush() error {
 		return nil
 	}
 
+	// c.lastFlush is "now"
+	snap.finalize(c.lastFlush)
+
 	raw, err := json.Marshal(snap)
 	if err != nil {
 		return err
@@ -241,14 +235,6 @@ func (c *Client) Flush() error {
 
 // Close the client connection.
 func (c *Client) Close() error {
-	if c == nil {
-		return nil
-	}
-	select {
-	case c.stop <- struct{}{}:
-	default:
-	}
-
 	// make best attempt at closing writer
 	err1 := c.Flush()
 	err2 := c.writer.Close()
