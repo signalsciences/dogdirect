@@ -1,5 +1,5 @@
 #!/bin/sh
 set -ex
 
-go build .
+go build . ./hostmetrics
 go test .
