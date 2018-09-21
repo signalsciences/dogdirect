@@ -80,7 +80,6 @@ func NewMetric(name string, mtype string, tags []string) *Metric {
 type Client struct {
 	Series     []*Metric          `json:"series"` // raw data
 	hostname   string             // hostname
-	namespace  string             // namespace prefix if any
 	tags       []string           // global tags, if any
 	metrics    map[string]*Metric // map of name to metric for fast lookup
 	histograms map[string]*ExactHistogram
