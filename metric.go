@@ -175,6 +175,7 @@ func (c *Client) Snapshot() *Client {
 		return nil
 	}
 	snap := Client{
+		hostname:   c.hostname,
 		Series:     c.Series,
 		metrics:    c.metrics,
 		histograms: c.histograms,
