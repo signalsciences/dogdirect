@@ -84,7 +84,7 @@ func (c *HostMetricCollector) Run() (HostMetrics, error) {
 
 	return HostMetrics{
 		CPUUser:      ((t.User + t.Nice) - (lastTimes.User + lastTimes.Nice)) * toPercent,
-		CPUSystem:    ((t.System + t.Irq + t.Softirq) - (lastTimes.System + c.lastTimes.Irq + c.lastTimes.Softirq)) * toPercent,
+		CPUSystem:    ((t.System + t.Irq + t.Softirq) - (lastTimes.System + lastTimes.Irq + lastTimes.Softirq)) * toPercent,
 		CPUIowait:    (t.Iowait - lastTimes.Iowait) * toPercent,
 		CPUIdle:      (t.Idle - lastTimes.Idle) * toPercent,
 		CPUStolen:    (t.Steal - lastTimes.Steal) * toPercent,
