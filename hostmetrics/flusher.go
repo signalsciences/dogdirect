@@ -5,19 +5,19 @@ import (
 )
 
 // HostMetricsWriter collects and writes host metrics to datadog
-type HostMetricWriter struct {
+type Flusher struct {
 	ddog      *dogdirect.Client
 	collector *HostMetricCollector
 	tags      []string
 }
 
-// NewHostMetricWriter will collect hostmetrics and send them to the datadog client on flush.  it will also apply global tags to the system metrics.
-func NewHostMetricWriter(ddog *dogdirect.Client, tags []string) (*HostMetricWriter, error) {
+// NewFlusher will collect hostmetrics and send them to the datadog client on flush.  it will also apply global tags to the system metrics.
+func NewFlusher(ddog *dogdirect.Client, tags []string) (*Flusher, error) {
 	collector, err := NewHostMetricCollector()
 	if err != nil {
 		return nil, err
 	}
-	return &HostMetricWriter{
+	return &Flusher{
 		ddog:      ddog,
 		collector: collector,
 		tags:      tags,
@@ -26,7 +26,7 @@ func NewHostMetricWriter(ddog *dogdirect.Client, tags []string) (*HostMetricWrit
 
 // Flush gets new host metrics, inserts them into the datadog client, and
 // then flushes the metrics upstream
-func (h *HostMetricWriter) Flush() error {
+func (h *Flusher) Flush() error {
 	hr, err := h.collector.Run()
 	if err != nil {
 		return err
@@ -48,6 +48,6 @@ func (h *HostMetricWriter) Flush() error {
 }
 
 // Close closes the datadog client
-func (h *HostMetricWriter) Close() error {
+func (h *Flusher) Close() error {
 	return h.ddog.Close()
 }
