@@ -31,7 +31,19 @@ func (h *HostMetricWriter) Flush() error {
 	if err != nil {
 		return err
 	}
-	h.ddog.Gauge("", hr.CPUUser, h.tags)
+	h.ddog.Gauge("xsystem.cpu.user", hr.CPUUser, h.tags)
+	h.ddog.Gauge("xsystem.cpu.system", hr.CPUSystem, h.tags)
+	h.ddog.Gauge("xsystem.cpu.iowait", hr.CPUIowait, h.tags)
+	h.ddog.Gauge("xsystem.cpu.idle", hr.CPUIdle, h.tags)
+	h.ddog.Gauge("xsystem.cpu.stolen", hr.CPUStolen, h.tags)
+	h.ddog.Gauge("xsystem.cpu.guest", hr.CPUGuest, h.tags)
+	/*
+	h.ddog.Gauge("system.mem.total", hr.MemTotal, h.tags)
+	h.ddog.Gauge("system.mem.free", hr.MemFree, h.tags)
+	h.ddog.Gauge("system.mem.used", hr.MemUsed, h.tags)
+	h.ddog.Gauge("system.mem.usable", hr.MemUsable, h.tags)
+	h.ddog.Gauge("system.mem.pct_usable", hr.MemPctUsable, h.tags)
+	*/
 	return h.ddog.Flush()
 }
 
