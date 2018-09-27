@@ -12,7 +12,7 @@ func TestBasicTest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create: %s", err)
 	}
-	c.Incr("counter", []string{"tag1", "tag2"})
+	c.Incr("counter", []string{"tag1", "role:foo"})
 	c.Incr("anotherc", nil)
 	c.Incr("counter", nil)
 	c.Incr("anotherc", nil)

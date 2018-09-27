@@ -18,6 +18,7 @@ var cases = []struct {
 	{[]string{"foo", "bar", "foo"}, []string{"bar", "foo"}},
 	{[]string{"foo", "foo", "bar"}, []string{"bar", "foo"}},
 	{[]string{"bar", "foo", "foo"}, []string{"bar", "foo"}},
+	{[]string{"foo", "foo", "foo"}, []string{"foo"}},
 }
 
 func TestUnique(t *testing.T) {
