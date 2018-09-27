@@ -5,41 +5,55 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/signalsciences/dogdirect"
 )
 
-var client *dogdirect.Client
+var (
+	client *dogdirect.Client
+	namespace string
+	tags []string
+)
 
 func gauge(args []string) ([]string, error) {
+	name := namespace+args[0]
+	log.Printf("gauge %s", name)
 	val, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
 		return nil, err
 	}
-	client.Gauge(args[0], val, nil)
+	client.Gauge(name, val, tags)
 	return args[2:], nil
 }
 func count(args []string) ([]string, error) {
+	name := namespace+args[0]
+	log.Printf("count %s", name)
 	val, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
 		return nil, err
 	}
-	client.Count(args[0], val, nil)
+	client.Count(name, val, tags)
 	return args[2:], nil
 }
 
 func incr(args []string) ([]string, error) {
-	client.Incr(args[0], nil)
+	name := namespace+args[0]
+	log.Printf("incr %s", name)
+	client.Incr(name, tags)
 	return args[1:], nil
 }
 
 func decr(args []string) ([]string, error) {
-	client.Decr(args[0], nil)
+	name := namespace+args[0]
+	log.Printf("decr %s", name)
+	client.Decr(name, tags)
 	return args[1:], nil
 }
 
 func sleep(args []string) ([]string, error) {
+	log.Printf("sleep %s", args[0])
 	d, err := time.ParseDuration(args[0])
 	if err != nil {
 		return nil, err
@@ -49,6 +63,7 @@ func sleep(args []string) ([]string, error) {
 }
 
 func flush(args []string) ([]string, error) {
+	log.Printf("flush")
 	err := client.Flush()
 	return args, err
 }
@@ -71,20 +86,36 @@ var cmdmap = map[string]cmdfn{
 }
 
 func main() {
-
 	var err error
 	hostname, err := os.Hostname()
 	if err != nil {
 		log.Fatalf("unable to get hostname: %s", err)
 	}
-	// todo, be able to add namespace and tags
 	client, err = dogdirect.New(hostname, os.Getenv("DD_API_KEY"))
 	if err != nil {
 		log.Fatalf("unable to create: %s", err)
 	}
 	defer client.Close()
 
+	flagNS := flag.String("namespace", "", "sets global namespace")
+	flagTags := flag.String("tags", "", "CSV of tags applied to every metric")
 	flag.Parse()
+
+	if *flagTags != "" {
+		tags := strings.Split(*flagTags, ",")
+		for i, t := range tags {
+			tags[i] = strings.TrimSpace(t)
+		}
+		log.Printf("setting tags to %v", tags)
+	}
+	if *flagNS != "" {
+		namespace = *flagNS
+		if namespace[len(namespace)-1] != '.' {
+			namespace += "."
+		}
+		log.Printf("setting namespace to %q", namespace)
+	}
+
 	args := flag.Args()
 
 	for len(args) > 0 {
