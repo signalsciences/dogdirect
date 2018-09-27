@@ -40,7 +40,7 @@ func count(args []string) ([]string, error) {
 
 func incr(args []string) ([]string, error) {
 	name := namespace+args[0]
-	log.Printf("incr %s", name)
+	log.Printf("incr %s with %v", name, tags)
 	client.Incr(name, tags)
 	return args[1:], nil
 }
@@ -102,7 +102,7 @@ func main() {
 	flag.Parse()
 
 	if *flagTags != "" {
-		tags := strings.Split(*flagTags, ",")
+		tags = strings.Split(*flagTags, ",")
 		for i, t := range tags {
 			tags[i] = strings.TrimSpace(t)
 		}
