@@ -12,43 +12,42 @@ import (
 )
 
 var (
-	client *dogdirect.Client
+	client    *dogdirect.Client
 	namespace string
-	tags []string
 )
 
 func gauge(args []string) ([]string, error) {
-	name := namespace+args[0]
+	name := namespace + args[0]
 	log.Printf("gauge %s", name)
 	val, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
 		return nil, err
 	}
-	client.Gauge(name, val, tags)
+	client.Gauge(name, val, nil)
 	return args[2:], nil
 }
 func count(args []string) ([]string, error) {
-	name := namespace+args[0]
+	name := namespace + args[0]
 	log.Printf("count %s", name)
 	val, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
 		return nil, err
 	}
-	client.Count(name, val, tags)
+	client.Count(name, val, nil)
 	return args[2:], nil
 }
 
 func incr(args []string) ([]string, error) {
-	name := namespace+args[0]
-	log.Printf("incr %s with %v", name, tags)
-	client.Incr(name, tags)
+	name := namespace + args[0]
+	log.Printf("incr %s", name)
+	client.Incr(name, nil)
 	return args[1:], nil
 }
 
 func decr(args []string) ([]string, error) {
-	name := namespace+args[0]
+	name := namespace + args[0]
 	log.Printf("decr %s", name)
-	client.Decr(name, tags)
+	client.Decr(name, nil)
 	return args[1:], nil
 }
 
@@ -91,7 +90,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to get hostname: %s", err)
 	}
-	client, err = dogdirect.New(hostname, os.Getenv("DD_API_KEY"))
+	api := dogdirect.NewAPI(os.Getenv("DD_API_KEY"), os.Getenv("DD_APP_KEY"), 5*time.Second)
+
+	client, err = dogdirect.New(hostname, api)
 	if err != nil {
 		log.Fatalf("unable to create: %s", err)
 	}
@@ -102,11 +103,15 @@ func main() {
 	flag.Parse()
 
 	if *flagTags != "" {
-		tags = strings.Split(*flagTags, ",")
+		tags := strings.Split(*flagTags, ",")
 		for i, t := range tags {
 			tags[i] = strings.TrimSpace(t)
 		}
 		log.Printf("setting tags to %v", tags)
+		if err := api.AddHostTags(hostname, "", tags); err != nil {
+			log.Fatalf("Unable to set tags: %s", err)
+		}
+
 	}
 	if *flagNS != "" {
 		namespace = *flagNS

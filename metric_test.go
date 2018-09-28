@@ -8,7 +8,8 @@ import (
 )
 
 func TestBasicTest(t *testing.T) {
-	c, err := New("hostname", "apikey")
+	api := NewAPI("foo", "bar", 0)
+	c, err := New("hostname", api)
 	if err != nil {
 		t.Fatalf("unable to create: %s", err)
 	}

@@ -1,13 +1,6 @@
 package dogdirect
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"sync"
 	"time"
 )
@@ -84,27 +77,26 @@ type Client struct {
 	metrics    map[string]*Metric // map of name to metric for fast lookup
 	histograms map[string]*ExactHistogram
 	now        func() float64 // for testing
-	writer     io.WriteCloser // where output goes
+	writer     API            // where output goes
 	lastFlush  float64        // unix epoch as float64(t.Now().Unix())
 
-	stop chan struct{}
 	sync.Mutex
 }
 
-// New creates a new datadog client
-func New(hostname string, apikey string) (*Client, error) {
+// New creates a new datadog metrics client
+func New(hostname string, api API) (*Client, error) {
 	client := &Client{
 		now:        now,
 		hostname:   hostname,
 		metrics:    make(map[string]*Metric),
 		histograms: make(map[string]*ExactHistogram),
-		writer:     NewWriter(apikey, time.Second*5),
+		writer:     api,
 		lastFlush:  now(),
 	}
 	return client, nil
 }
 
-// Gauge represent an observation
+// Gauge represents an observation
 func (c *Client) Gauge(name string, value float64, tags []string) error {
 	c.Lock()
 	m, ok := c.metrics[name]
@@ -226,74 +218,11 @@ func (c *Client) Flush() error {
 	// c.lastFlush is "now"
 	snap.finalize(c.lastFlush)
 
-	raw, err := json.Marshal(snap)
-	if err != nil {
-		return err
-	}
-	_, err = c.writer.Write(raw)
-	return err
+	return c.writer.AddPoints(snap.Series)
 }
 
 // Close the client connection.
 func (c *Client) Close() error {
 	// make best attempt at closing writer
-	err1 := c.Flush()
-	err2 := c.writer.Close()
-	if err1 != nil {
-		return err1
-	}
-	return err2
-}
-
-// DirectAPIWriter handles uploading data to DataDog's api endpoint
-type DirectAPIWriter struct {
-	endpoint string
-	client   *http.Client
-}
-
-// NewWriter creates a new uploader to DataDog's api
-func NewWriter(apikey string, timeout time.Duration) *DirectAPIWriter {
-	return &DirectAPIWriter{
-		endpoint: "https://api.datadoghq.com/api/v1/series?api_key=" + apikey,
-		client: &http.Client{
-			Timeout: timeout,
-		},
-	}
-}
-
-// Close satisfies io.Closer
-func (d *DirectAPIWriter) Close() error {
-	d = nil
-	return nil
-}
-
-// Write satifies io.Writer
-func (d *DirectAPIWriter) Write(data []byte) (int, error) {
-	body := bytes.NewReader(data)
-	req, err := http.NewRequest(http.MethodPost, d.endpoint, body)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := d.client.Do(req)
-	if err != nil {
-		if urlErr, ok := err.(*url.Error); ok {
-			// if the error has the url in it, then retrieve the inner error
-			// and ditch the url (which might contain secrets)
-			err = urlErr.Err
-		}
-		return 0, err
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return 0, err
-	}
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		return 0, fmt.Errorf("http status %v: %s", resp.StatusCode, string(responseBody))
-	}
-
-	return len(data), nil
+	return c.Flush()
 }
