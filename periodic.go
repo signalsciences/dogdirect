@@ -11,16 +11,14 @@ type FlushCloser interface {
 }
 
 // Multi is a list of a FlushClosers
-type Multi struct {
-	tasks []FlushCloser
-}
+type Multi []FlushCloser
 
 // Flush flushes all tasks
 //  All tasks are attempted to be flushed, first error if any is returned.
 //  Currently done in serial, although could be done in parallel
 func (m Multi) Flush() error {
 	var errout error
-	for _, f := range m.tasks {
+	for _, f := range m {
 		if err := f.Flush(); err != nil && errout == nil {
 			errout = err
 		}
@@ -32,7 +30,7 @@ func (m Multi) Flush() error {
 // All tasks are attempted to be closed, first error if any is returned
 func (m Multi) Close() error {
 	var errout error
-	for _, f := range m.tasks {
+	for _, f := range m {
 		if err := f.Close(); err != nil && errout == nil {
 			errout = err
 		}
