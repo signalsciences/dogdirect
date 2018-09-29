@@ -24,22 +24,12 @@ type HostMetrics struct {
 
 // HostMetricCollector defines book-keeping for the check
 type HostMetricCollector struct {
-	numCores  float64
 	lastJiffy float64
 	lastTimes cpu.TimesStat
 }
 
 // NewHostMetricCollector creates a new collector
 func NewHostMetricCollector() (*HostMetricCollector, error) {
-	info, err := cpu.Info()
-	if err != nil {
-		return nil, fmt.Errorf("cpu.Info() failed: %s", err)
-	}
-	numCores := 0.0
-	for _, i := range info {
-		numCores += float64(i.Cores)
-	}
-
 	cpuTimes, err := cpu.Times(false)
 	if err != nil {
 		return nil, fmt.Errorf("cpu.Times() failed: %s", err)
@@ -48,7 +38,6 @@ func NewHostMetricCollector() (*HostMetricCollector, error) {
 	}
 	t := cpuTimes[0]
 	return &HostMetricCollector{
-		numCores:  numCores,
 		lastJiffy: t.Total(),
 		lastTimes: t,
 	}, nil
