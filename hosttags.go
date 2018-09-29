@@ -25,8 +25,8 @@ func (ht *HostTagger) Flush() error {
 	}
 
 	// error case is normal, and occurs with newly created hosts
-	// Need to distinguish between "host not created" and something
-	// more horrible
+	// Need to distinguish between "host does not exist" and something
+	// more horrible.  Perhaps limit number of attempts.
 	if err := ht.api.AddHostTags(ht.hostname, "", ht.tags); err == nil {
 		ht.tagged = true
 	}
