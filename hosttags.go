@@ -1,9 +1,5 @@
 package dogdirect
 
-import (
-	"fmt"
-)
-
 type HostTagger struct {
 	api      API
 	hostname string
@@ -27,10 +23,13 @@ func (ht *HostTagger) Flush() error {
 		ht.tagged = true
 		return nil
 	}
-	if err := ht.api.AddHostTags(ht.hostname, "", ht.tags); err != nil {
-		return fmt.Errorf("unable to set hosttags for %q: %v", ht.hostname, err)
+
+	// error case is normal, and occurs with newly created hosts
+	// Need to distinguish between "host not created" and something
+	// more horrible
+	if err := ht.api.AddHostTags(ht.hostname, "", ht.tags); err == nil {
+		ht.tagged = true
 	}
-	ht.tagged = true
 	return nil
 }
 
