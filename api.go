@@ -36,6 +36,8 @@ func (a API) AddPoints(metrics []*Metric) error {
 	return write(endpoint, post, a.timeout)
 }
 
+// AddHostTags adds a host tags to a given host.
+// If host is new or doesn't have metrics yet, this call will fail.
 func (a API) AddHostTags(host string, source string, tags []string) error {
 	if source == "" {
 		source = "user"
