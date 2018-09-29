@@ -38,16 +38,17 @@ func (h *Flusher) Flush() error {
 	h.ddog.Gauge("xsystem.cpu.stolen", hr.CPUStolen, h.tags)
 	h.ddog.Gauge("xsystem.cpu.guest", hr.CPUGuest, h.tags)
 	/*
-	h.ddog.Gauge("system.mem.total", hr.MemTotal, h.tags)
-	h.ddog.Gauge("system.mem.free", hr.MemFree, h.tags)
-	h.ddog.Gauge("system.mem.used", hr.MemUsed, h.tags)
-	h.ddog.Gauge("system.mem.usable", hr.MemUsable, h.tags)
-	h.ddog.Gauge("system.mem.pct_usable", hr.MemPctUsable, h.tags)
+		h.ddog.Gauge("system.mem.total", hr.MemTotal, h.tags)
+		h.ddog.Gauge("system.mem.free", hr.MemFree, h.tags)
+		h.ddog.Gauge("system.mem.used", hr.MemUsed, h.tags)
+		h.ddog.Gauge("system.mem.usable", hr.MemUsable, h.tags)
+		h.ddog.Gauge("system.mem.pct_usable", hr.MemPctUsable, h.tags)
 	*/
-	return h.ddog.Flush()
+
+	return nil
 }
 
 // Close closes the datadog client
 func (h *Flusher) Close() error {
-	return h.ddog.Close()
+	return nil
 }
