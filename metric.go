@@ -84,7 +84,7 @@ type Client struct {
 }
 
 // New creates a new datadog metrics client
-func New(hostname string, api API) (*Client, error) {
+func New(hostname string, api API) *Client {
 	client := &Client{
 		now:        now,
 		hostname:   hostname,
@@ -93,7 +93,7 @@ func New(hostname string, api API) (*Client, error) {
 		writer:     api,
 		lastFlush:  now(),
 	}
-	return client, nil
+	return client
 }
 
 // Gauge represents an observation

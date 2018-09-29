@@ -9,10 +9,7 @@ import (
 
 func TestBasicTest(t *testing.T) {
 	api := NewAPI("foo", "bar", 0)
-	c, err := New("hostname", api)
-	if err != nil {
-		t.Fatalf("unable to create: %s", err)
-	}
+	c := New("hostname", api)
 	c.Incr("counter", []string{"tag1", "role:foo"})
 	c.Incr("anotherc", nil)
 	c.Incr("counter", nil)

@@ -92,10 +92,7 @@ func main() {
 	}
 	api := dogdirect.NewAPI(os.Getenv("DD_API_KEY"), os.Getenv("DD_APP_KEY"), 5*time.Second)
 
-	client, err = dogdirect.New(hostname, api)
-	if err != nil {
-		log.Fatalf("unable to create: %s", err)
-	}
+	client = dogdirect.New(hostname, api)
 	defer client.Close()
 
 	flagNS := flag.String("namespace", "", "sets global namespace")
