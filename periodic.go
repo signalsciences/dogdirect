@@ -10,8 +10,35 @@ type FlushCloser interface {
 	Close() error
 }
 
+// MultiTask is a sequence of FlushClosers
+//  It operates in serial, although the underlyding implimentation
+//  can work in parallel.  See Periodic below
+type MultiTask []FlushCloser
+
+// Flush writes out all data and returns first error if any
+func (mt *MultiTask) Flush() error {
+	var errout error
+	for _, task := range *mt {
+		if err := task.Close(); err != nil && errout == nil {
+			errout = err
+		}
+	}
+	return errout
+}
+
+// Close writes out any buffered data and shutdown client
+func (mt *MultiTask) Close() error {
+	var errout error
+	for _, task := range *mt {
+		if err := task.Close(); err != nil && errout == nil {
+			errout = err
+		}
+	}
+	return errout
+}
+
 // Periodic handles flushing data periodically, also satifies the
-// FlushCloser interface
+// FlushCloser interface so it can be used in MutliTask
 type Periodic struct {
 	client FlushCloser
 	stop   chan struct{}
