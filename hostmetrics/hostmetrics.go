@@ -68,7 +68,7 @@ func (c *HostMetricCollector) Run() (HostMetrics, error) {
 	if err != nil {
 		// only possible if can't parse numbers in /proc/meminfo
 		// that would be massive failure
-		return HostMetrics{}, fmt.Errorf("mem.VirtualMemory() failed: %s: err")
+		return HostMetrics{}, fmt.Errorf("mem.VirtualMemory() failed: %s:", err)
 	}
 
 	return HostMetrics{
