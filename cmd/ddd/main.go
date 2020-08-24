@@ -120,7 +120,7 @@ func main() {
 	api := dogdirect.NewAPI(os.Getenv("DD_API_KEY"), os.Getenv("DD_APP_KEY"), 5*time.Second)
 
 	// create main metrics
-	client = dogdirect.New(hostname, api)
+	client = dogdirect.New(hostname, api, time.Second*15)
 	tasks := dogdirect.MultiTask{
 		dogdirect.NewPeriodic(client, time.Second*15),
 	}

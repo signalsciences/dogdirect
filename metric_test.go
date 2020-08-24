@@ -9,7 +9,7 @@ import (
 
 func TestBasicTest(t *testing.T) {
 	api := NewAPI("foo", "bar", 0)
-	c := New("hostname", api)
+	c := New("hostname", api, 18*time.Second)
 	c.Incr("counter", []string{"tag1", "role:foo"})
 	c.Incr("anotherc", nil)
 	c.Incr("counter", nil)
@@ -31,5 +31,5 @@ func TestBasicTest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't marhsall: %s", err)
 	}
-	fmt.Printf("raw = %s", string(raw))
+	fmt.Printf("raw = %s\n", string(raw))
 }

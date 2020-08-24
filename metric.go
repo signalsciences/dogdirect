@@ -79,12 +79,14 @@ type Client struct {
 	now        func() float64 // for testing
 	writer     API            // where output goes
 	lastFlush  float64        // unix epoch as float64(t.Now().Unix())
+	interval   int            // metrics interval in seconds, this matters to DD
 
 	sync.Mutex
 }
 
 // New creates a new datadog metrics client
-func New(hostname string, api API) *Client {
+func New(hostname string, api API, interval time.Duration) *Client {
+	intervalSeconds := int(interval.Seconds())
 	client := &Client{
 		now:        now,
 		hostname:   hostname,
@@ -92,6 +94,7 @@ func New(hostname string, api API) *Client {
 		histograms: make(map[string]*ExactHistogram),
 		writer:     api,
 		lastFlush:  now(),
+		interval:   intervalSeconds,
 	}
 	return client
 }
@@ -172,6 +175,7 @@ func (c *Client) Snapshot() *Client {
 		metrics:    c.metrics,
 		histograms: c.histograms,
 		lastFlush:  c.lastFlush,
+		interval:   c.interval,
 	}
 	c.metrics = make(map[string]*Metric)
 	c.histograms = make(map[string]*ExactHistogram)
@@ -181,8 +185,6 @@ func (c *Client) Snapshot() *Client {
 
 // not locked.. for use locally with snapshots
 func (c *Client) finalize(nowUnix float64) {
-	interval := nowUnix - c.lastFlush
-
 	// histograms: convert to various descriptive statistic gauges
 	for name, h := range c.histograms {
 		hr := h.Flush()
@@ -198,9 +200,9 @@ func (c *Client) finalize(nowUnix float64) {
 	for i := 0; i < len(c.Series); i++ {
 		c.Series[i].Value[0][0] = nowUnix
 		c.Series[i].Hostname = c.hostname
-		c.Series[i].Interval = int(interval)
+		c.Series[i].Interval = c.interval
 		if c.Series[i].Type == "rate" {
-			c.Series[i].Value[0][1] /= interval
+			c.Series[i].Value[0][1] /= float64(c.interval)
 		}
 	}
 }
