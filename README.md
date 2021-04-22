@@ -2,6 +2,16 @@
 
 Directly send metrics to [DataDog](https://www.datadoghq.com/) via the HTTP API using [golang](https://golang.org).
 
+## :rotating_light: NOTICE :rotating_light:
+
+Effective **May 17th 2021** the default branch will change from `master` to `main`. Run the following commands to update a local clone:
+```
+git branch -m master main
+git fetch origin
+git branch -u origin/main main
+git remote set-head origin -a
+```
+
 # What Problem Are We Solving?
 
 Using DataDog's SasS offering to upload time series data when you can't use the official DataDog agent.
