@@ -7,12 +7,12 @@ import (
 // HistogramResult returns some descriptive statistics
 // Add other stats as needed
 type HistogramResult struct {
-	count  float64
-	min    float64
-	max    float64
-	avg    float64
-	median float64
-	p95    float64
+	Count  float64
+	Min    float64
+	Max    float64
+	Avg    float64
+	Median float64
+	P95    float64
 }
 
 // ExactHistogram is the dumbest way possible to compute various descriptive statistics
@@ -57,11 +57,11 @@ func (he *ExactHistogram) Flush() HistogramResult {
 	}
 
 	return HistogramResult{
-		count:  float64(count),
-		min:    he.samples[0],
-		max:    he.samples[count-1],
-		avg:    sum / float64(count),
-		median: he.samples[count/2],
-		p95:    he.samples[(count*95)/100],
+		Count:  float64(count),
+		Min:    he.samples[0],
+		Max:    he.samples[count-1],
+		Avg:    sum / float64(count),
+		Median: he.samples[count/2],
+		P95:    he.samples[(count*95)/100],
 	}
 }

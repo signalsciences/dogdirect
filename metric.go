@@ -186,14 +186,14 @@ func (c *Client) finalize(nowUnix float64) {
 	// histograms: convert to various descriptive statistic gauges
 	for name, h := range c.histograms {
 		hr := h.Flush()
-		if hr.count == 0 {
+		if hr.Count == 0 {
 			continue
 		}
-		c.Count(name+".count", hr.count, h.tags)
-		c.Gauge(name+".max", hr.max, h.tags)
-		c.Gauge(name+".avg", hr.avg, h.tags)
-		c.Gauge(name+".median", hr.median, h.tags)
-		c.Gauge(name+".95percentile", hr.p95, h.tags)
+		c.Count(name+".count", hr.Count, h.tags)
+		c.Gauge(name+".max", hr.Max, h.tags)
+		c.Gauge(name+".avg", hr.Avg, h.tags)
+		c.Gauge(name+".median", hr.Median, h.tags)
+		c.Gauge(name+".95percentile", hr.P95, h.tags)
 	}
 	for i := 0; i < len(c.Series); i++ {
 		c.Series[i].Value[0][0] = nowUnix
