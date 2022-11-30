@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const endpointv1 = "https://api.datadoghq.com/api/v1"
+var endpointv1 = "https://api.datadoghq.com/api/v1"
 
 type API struct {
 	apikey  string
