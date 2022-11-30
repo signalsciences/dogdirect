@@ -13,12 +13,12 @@ func benchmarkExactHistogram(sz int, b *testing.B) {
 			h.Add(float64(i))
 		}
 		hr := h.Flush()
-		if int(hr.count) != sz {
-			b.Fatalf("benchmark exact histogram failed.  count Expected %d got %d", sz, int(hr.count))
+		if int(hr.Count) != sz {
+			b.Fatalf("benchmark exact histogram failed.  count Expected %d got %d", sz, int(hr.Count))
 		}
 
 		// make absolutely sure compiler doesn't optimize something away
-		result = hr.count
+		result = hr.Count
 	}
 
 }
