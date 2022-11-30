@@ -3,8 +3,8 @@ package hostmetrics
 import (
 	"fmt"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 // HostMetrics defines a common set of metrics of the host
